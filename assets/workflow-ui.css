@@ -1,0 +1,68 @@
+.wf { min-width:0; color:#17201c; }
+.wf h1 { font-size:23px; margin:0; }
+.wf h2 { font-size:18px; margin:0 0 14px; }
+.wf-head,.wf-tools,.wf-actions { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:18px; }
+.wf button,.wf input,.wf select,.wf textarea { font:inherit; }
+.wf button { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:36px; padding:6px 12px; background:#fff; color:#17201c; border:1px solid #ccd8d0; border-radius:5px; cursor:pointer; }
+.wf button svg { width:16px; height:16px; }
+.wf button:hover { background:#edf5f0; }
+.wf button:disabled { opacity:.5; cursor:not-allowed; }
+.wf button.primary { background:#176b52; border-color:#176b52; color:white; }
+.wf button.danger { color:#b42318; border-color:#e7a6a0; }
+.wf input:not([type=checkbox]):not([type=radio]),.wf select,.wf textarea { width:100%; min-width:0; min-height:38px; border:1px solid #ccd8d0; border-radius:4px; padding:8px; background:white; color:#17201c; }
+.wf input[type=checkbox] { width:18px; height:18px; accent-color:#176b52; vertical-align:middle; }
+.wf input[type=file] { max-width:100%; }
+.wf textarea { min-height:70px; }
+.wf .wf-field { display:grid; gap:6px; min-width:0; }
+.wf .wf-field label { font-weight:600; }
+.wf .wf-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin:16px 0; }
+.wf .wf-table { overflow:auto; max-width:100%; border:1px solid #d5ded9; background:white; }
+.wf table { border-collapse:collapse; width:100%; white-space:normal; }
+.wf th { background:#edf3ef; font-size:13px; color:#4a5d53; text-align:left; }
+.wf td,.wf th { padding:12px; border-bottom:1px solid #e3e9e5; vertical-align:middle; min-width:85px; }
+.wf td input[type=number] { min-width:88px; max-width:145px; }
+.wf tr.sub td { background:#f5f8f6; padding-left:28px; }
+.wf .muted { color:#66766c; font-size:13px; }
+.wf .badge { display:inline-block; padding:3px 8px; border-radius:4px; background:#e9f3ec; color:#226943; font-size:13px; }
+.wf .warn { background:#fff0d1; color:#7a4900; }
+.wf .gray { background:#edf0f3; color:#626d79; }
+.wf .bad { background:#feebe9; color:#ae3025; }
+.wf .wf-summary { display:flex; align-items:center; gap:26px; flex-wrap:wrap; padding:16px 0; border-top:1px solid #d5ded9; border-bottom:1px solid #d5ded9; margin:16px 0; }
+.wf .wf-summary strong { font-size:20px; display:block; }
+.wf .wf-notice { padding:12px 14px; margin:14px 0; background:#fff5df; border-left:3px solid #c08718; }
+.wf .wf-split { display:grid; grid-template-columns:175px minmax(0,1fr); gap:20px; }
+.wf .wf-side { border-right:1px solid #d5ded9; padding-right:16px; }
+.wf .wf-side button { width:100%; border:0; text-align:left; justify-content:flex-start; margin:3px 0; }
+.wf .wf-side button.selected { background:#dfeee5; color:#176b52; font-weight:600; }
+.wf .wf-products { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.wf .wf-product { background:white; border:1px solid #d5ded9; border-radius:6px; overflow:hidden; }
+.wf .wf-photo { height:145px; background-image:url('procurement-food-products-v0.1.png'); background-size:300% 200%; background-position:var(--x) var(--y); }
+.wf .wf-product-body { padding:14px; display:grid; gap:8px; }
+.wf .wf-product h3 { font-size:16px; margin:0; }
+.wf .wf-launch { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; margin-top:34px; }
+.wf .wf-launch button { min-height:190px; flex-direction:column; font-size:28px; }
+.wf .wf-launch svg { width:38px; height:38px; }
+.wf .wf-tabs { display:flex; gap:8px; overflow:auto; margin-bottom:14px; }
+.wf .wf-tabs button { flex-shrink:0; }
+.wf .wf-receipt { display:grid; grid-template-columns:230px minmax(0,1fr); gap:24px; }
+.wf .wf-scale { background:#172923; color:#fff; padding:24px; margin:16px 0; }
+.wf .wf-scale strong { display:block; font-size:44px; font-variant-numeric:tabular-nums; }
+.wf .wf-scale .muted { color:#c4d6cc; }
+.wf .wf-thumbs { display:flex; gap:8px; flex-wrap:wrap; }
+.wf .wf-thumbs img { width:64px; height:64px; object-fit:cover; }
+.wf dialog { width:min(780px,calc(100vw - 28px)); max-height:90vh; overflow:auto; border:1px solid #bbcbbf; padding:24px; border-radius:6px; }
+.wf dialog::backdrop { background:#10271c66; }
+.wf dialog.large { width:min(1100px,calc(100vw - 28px)); }
+.wf .wf-error { background:#ffebe8; color:#a72e21; padding:10px; margin:10px 0; }
+.wf .wf-price-input { display:flex; align-items:center; gap:8px; }
+.wf input.wf-last-price { color:#78867e; }
+.wf input.wf-last-price:focus { color:#17201c; }
+.wf .wf-receipt .wf-side button { display:block; min-height:62px; }
+.wf .wf-receipt .wf-side small { font-size:12px; color:#65776b; }
+.wf [type=hidden] { display:none !important; }
+.wf .wf-steps { display:flex; gap:8px; flex-wrap:wrap; margin:18px 0; }
+.wf .wf-steps span { border-bottom:2px solid #c9d4ce; padding:8px; }
+.wf .wf-steps .done { border-color:#228357; }
+.wf .wf-steps .pending { color:#7c8782; }
+@media(max-width:1050px) { .wf .wf-products { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:680px) { .wf .wf-split,.wf .wf-receipt { grid-template-columns:minmax(0,1fr); }.wf .wf-side { display:flex; overflow:auto; border-right:0; gap:5px; }.wf .wf-side button { width:auto; flex-shrink:0; }.wf .wf-products { grid-template-columns:minmax(0,1fr); }.wf .wf-product { display:grid; grid-template-columns:90px minmax(0,1fr); }.wf .wf-photo { height:100%; min-height:100px; }.wf .wf-fields { grid-template-columns:1fr; }.wf .wf-launch { gap:8px; }.wf .wf-launch button { min-height:140px; font-size:23px; padding:8px; }.wf h1 { font-size:21px; } }

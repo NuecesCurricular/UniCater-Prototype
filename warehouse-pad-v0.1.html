@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <link rel="stylesheet" href="assets/workflow-ui.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UniCater 库房 PAD 作业端</title>
+  <style>
+    :root {
+      --bg: #eef2f0;
+      --surface: #fff;
+      --surface-soft: #f6f8f7;
+      --ink: #17201c;
+      --muted: #607069;
+      --border: #cfd9d4;
+      --primary: #176b52;
+      --primary-dark: #0f513e;
+      --primary-soft: #e5f3ed;
+      --blue: #175cd3;
+      --blue-soft: #eaf2ff;
+      --amber: #a84c0f;
+      --amber-soft: #fff1e6;
+      --red: #b42318;
+      --red-soft: #fff0ee;
+      --shadow: 0 10px 28px rgba(29, 49, 41, .09);
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; }
+    html { color-scheme: light; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      letter-spacing: 0;
+    }
+    button, input, select, textarea { font: inherit; letter-spacing: 0; }
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .48; }
+    .hidden { display: none !important; }
+    svg { width: 20px; height: 20px; stroke-width: 1.8; }
+
+    .login-shell {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: #e7eeea;
+    }
+    .login-panel {
+      width: min(430px, 100%);
+      padding: 30px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+    .brand-mark {
+      display: grid; place-items: center; width: 42px; height: 42px;
+      border-radius: var(--radius); background: var(--primary); color: #fff; font-weight: 800;
+    }
+    .brand strong { display: block; font-size: 18px; }
+    .brand span { color: var(--muted); font-size: 12px; }
+    h1, h2, h3, p { margin-top: 0; }
+    .login-panel h1 { margin-bottom: 6px; font-size: 24px; }
+    .login-panel > p { color: var(--muted); }
+
+    .field { display: grid; gap: 6px; margin-top: 16px; }
+    .field label { color: #405048; font-size: 13px; font-weight: 700; }
+    .input, .select, .textarea {
+      width: 100%; min-height: 42px; padding: 9px 11px;
+      border: 1px solid var(--border); border-radius: var(--radius); background: #fff; color: var(--ink);
+    }
+    .textarea { min-height: 76px; resize: vertical; }
+    .input:focus, .select:focus, .textarea:focus { outline: 2px solid rgba(23, 107, 82, .18); border-color: var(--primary); }
+    .button {
+      min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 9px 16px; border: 1px solid transparent; border-radius: var(--radius); font-weight: 700;
+    }
+    .button.primary { background: var(--primary); color: #fff; }
+    .button.primary:hover { background: var(--primary-dark); }
+    .button.secondary { border-color: var(--border); background: #fff; color: var(--ink); }
+    .button.danger { background: var(--red); color: #fff; }
+    .button.full { width: 100%; margin-top: 22px; }
+    .button.compact { min-height: 34px; padding: 6px 10px; font-size: 12px; }
+    .icon-button {
+      width: 40px; height: 40px; display: inline-grid; place-items: center;
+      border: 1px solid var(--border); border-radius: var(--radius); background: #fff; color: var(--ink);
+    }
+
+    .pad-shell { min-height: 100vh; display: grid; grid-template-rows: 64px minmax(0, 1fr); }
+    .topbar {
+      position: sticky; top: 0; z-index: 10; display: grid;
+      grid-template-columns: minmax(240px, 1fr) auto auto auto; align-items: center; gap: 20px;
+      padding: 0 22px; border-bottom: 1px solid var(--border); background: #fff;
+    }
+    .warehouse-name { display: flex; align-items: center; gap: 11px; min-width: 0; }
+    .warehouse-name .brand-mark { width: 34px; height: 34px; }
+    .warehouse-name strong { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .top-meta { display: flex; align-items: center; gap: 7px; color: var(--muted); white-space: nowrap; }
+    .top-meta strong { color: var(--ink); }
+    .logout { color: var(--red); }
+    .pad-main { padding: 20px 22px 28px; overflow: auto; }
+    .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
+    .page-head h1 { margin: 0 0 4px; font-size: 24px; }
+    .page-head p { margin: 0; color: var(--muted); }
+    .page-actions { display: flex; align-items: center; gap: 10px; }
+
+    .task-launcher { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .launch-button {
+      min-height: 220px; display: grid; grid-template-rows: 72px auto auto; align-content: center; justify-items: center; gap: 10px;
+      padding: 24px; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; color: var(--ink);
+      box-shadow: 0 4px 16px rgba(31, 49, 42, .05);
+    }
+    .launch-button:hover { border-color: var(--primary); box-shadow: var(--shadow); }
+    .launch-icon { display: grid; place-items: center; width: 66px; height: 66px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); }
+    .launch-icon svg { width: 32px; height: 32px; }
+    .launch-button h2 { margin: 0; font-size: 22px; }
+    .launch-button span { color: var(--muted); text-align: center; }
+    .launch-count { color: var(--primary) !important; font-weight: 800; }
+
+    .metric-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .metric { padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; }
+    .metric span { color: var(--muted); font-size: 12px; }
+    .metric strong { display: block; margin-top: 3px; font-size: 22px; }
+
+    .workspace { border: 1px solid var(--border); border-radius: var(--radius); background: #fff; box-shadow: 0 3px 12px rgba(31, 49, 42, .04); }
+    .workspace-head, .workspace-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 16px; }
+    .workspace-head { border-bottom: 1px solid var(--border); }
+    .workspace-foot { border-top: 1px solid var(--border); }
+    .workspace-head h2 { margin: 0; font-size: 16px; }
+    .workspace-body { padding: 16px; }
+    .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+    .toolbar .input, .toolbar .select { width: auto; min-width: 170px; }
+    .tabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--border); background: #fff; }
+    .tab { min-height: 42px; padding: 9px 14px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--muted); white-space: nowrap; }
+    .tab.active { border-bottom-color: var(--primary); color: var(--primary); font-weight: 800; }
+    .tab.completed { color: var(--muted); }
+    .status { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 750; white-space: nowrap; }
+    .status.pending { background: var(--amber-soft); color: var(--amber); }
+    .status.active { background: var(--primary-soft); color: var(--primary); }
+    .status.info { background: var(--blue-soft); color: var(--blue); }
+    .status.disabled { background: #edf0ef; color: #68736e; }
+    .status.error { background: var(--red-soft); color: var(--red); }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+    table { width: 100%; border-collapse: collapse; background: #fff; text-align: left; }
+    th, td { padding: 11px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; vertical-align: middle; }
+    th { background: var(--surface-soft); color: #50615a; font-size: 12px; }
+    tr:last-child td { border-bottom: 0; }
+    .table-action { padding: 5px 8px; border: 0; background: transparent; color: var(--primary); font-weight: 750; }
+
+    .receipt-layout { min-height: calc(100vh - 232px); display: grid; grid-template-columns: 42% minmax(0, 1fr); }
+    .item-pane { border-right: 1px solid var(--border); background: var(--surface-soft); }
+    .item-pane-head { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+    .item-list { display: grid; gap: 8px; padding: 12px; }
+    .item-card {
+      width: 100%; display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; gap: 10px; align-items: center;
+      padding: 11px; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; text-align: left;
+    }
+    .item-card.active { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(23, 107, 82, .10); }
+    .item-card.complete { background: #f3f7f5; }
+    .food-thumb { width: 54px; height: 54px; border-radius: 4px; background-image: url('./assets/procurement-food-products-v0.1.png'); background-size: 600% 100%; background-position: calc(var(--sprite) * 20%) 0; }
+    .item-title { min-width: 0; }
+    .item-title strong { display: block; font-size: 15px; }
+    .item-title span { display: block; color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item-qty { text-align: right; }
+    .item-qty strong { display: block; color: var(--primary); }
+    .item-qty span { color: var(--muted); font-size: 11px; }
+    .operation-pane { min-width: 0; padding: 16px; }
+    .selected-product { display: flex; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+    .selected-product h2 { margin: 0 0 4px; font-size: 20px; }
+    .selected-product p { margin: 0; color: var(--muted); }
+    .quantity-grid { display: grid; grid-template-columns: minmax(210px, .9fr) minmax(260px, 1.1fr); gap: 14px; }
+    .quantity-card { padding: 15px; border: 1px solid var(--border); border-radius: var(--radius); background: #fff; }
+    .quantity-card h3 { margin: 0 0 12px; font-size: 14px; }
+    .quantity-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+    .quantity-summary div { padding: 9px; background: var(--surface-soft); }
+    .quantity-summary span { display: block; color: var(--muted); font-size: 11px; }
+    .quantity-summary strong { font-size: 17px; }
+    .scale-display { display: grid; place-items: center; min-height: 118px; padding: 12px; border: 1px solid #a9bbb2; background: #17201c; color: #dfffee; }
+    .scale-display strong { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 38px; font-variant-numeric: tabular-nums; }
+    .scale-display span { color: #93b9a9; font-size: 12px; }
+    .scale-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+    .scale-connected { display: inline-flex; align-items: center; gap: 5px; color: var(--primary); font-size: 12px; font-weight: 700; }
+    .segmented { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 3px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-soft); }
+    .segment { min-height: 34px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); }
+    .segment.active { background: #fff; color: var(--primary); box-shadow: 0 1px 3px rgba(20,40,32,.12); font-weight: 750; }
+    .scale-actions, .form-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .scale-actions .button { flex: 1; }
+    .evidence-section { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .evidence-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .evidence-head h3 { margin: 0; font-size: 14px; }
+    .evidence-actions { display: flex; gap: 8px; }
+    .photo-strip { display: flex; gap: 8px; min-height: 70px; overflow-x: auto; }
+    .photo-tile { position: relative; flex: 0 0 88px; height: 68px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 4px; background: #e9eeeb; color: var(--muted); }
+    .photo-tile.report { background: var(--blue-soft); color: var(--blue); }
+    .photo-tile span { position: absolute; left: 4px; bottom: 4px; padding: 1px 4px; background: rgba(255,255,255,.9); font-size: 10px; }
+    .empty-evidence { display: grid; place-items: center; width: 100%; border: 1px dashed var(--border); color: var(--muted); font-size: 12px; }
+    .order-evidence { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 12px; margin-top: 14px; }
+    .notice { display: flex; gap: 9px; padding: 11px 12px; border-radius: var(--radius); font-size: 13px; }
+    .notice.info { background: var(--blue-soft); color: #144b9b; }
+    .notice.warning { background: var(--amber-soft); color: #86400e; }
+    .notice.success { background: var(--primary-soft); color: var(--primary-dark); }
+    .footer-hint { color: var(--muted); font-size: 12px; }
+
+    .modal-backdrop { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 24px; background: rgba(13, 24, 19, .46); }
+    .modal { width: min(640px, 100%); max-height: 88vh; overflow: auto; border-radius: var(--radius); background: #fff; box-shadow: 0 24px 60px rgba(0,0,0,.25); }
+    .modal-head, .modal-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; }
+    .modal-head { border-bottom: 1px solid var(--border); }
+    .modal-head h2 { margin: 0; font-size: 18px; }
+    .modal-body { padding: 16px; }
+    .modal-foot { justify-content: flex-end; border-top: 1px solid var(--border); }
+    .sign-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+    .sign-card { padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); }
+    .sign-card strong { display: block; }
+    .sign-card span { color: var(--muted); font-size: 12px; }
+
+    @media (max-width: 900px) {
+      .topbar { grid-template-columns: minmax(180px, 1fr) auto auto; gap: 10px; padding: 0 14px; }
+      .topbar .top-meta.user { display: none; }
+      .pad-main { padding: 16px 14px 24px; }
+      .task-launcher { grid-template-columns: 1fr; }
+      .launch-button { min-height: 132px; grid-template-columns: 60px minmax(0, 1fr); grid-template-rows: auto auto; justify-items: start; text-align: left; }
+      .launch-icon { grid-row: 1 / 3; }
+      .launch-button span { text-align: left; }
+      .metric-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .receipt-layout { grid-template-columns: 1fr; }
+      .item-pane { border-right: 0; border-bottom: 1px solid var(--border); }
+      .item-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .quantity-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 620px) {
+      .topbar { grid-template-columns: minmax(0, 1fr) auto; height: auto; min-height: 58px; }
+      .topbar .top-meta { display: none; }
+      .page-head { align-items: stretch; flex-direction: column; }
+      .page-actions { justify-content: space-between; }
+      .metric-row, .item-list, .order-evidence, .sign-grid { grid-template-columns: 1fr; }
+      .workspace-head, .workspace-foot { align-items: stretch; flex-direction: column; }
+      .workspace-foot .button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="modal-root"></div>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script src="assets/workflow-store.js"></script>
+  <script src="assets/workflow-ui.js"></script>
+  <script>
+    const state = {
+      surface: "login",
+      view: "home",
+      now: new Date(),
+      receiptListTab: "open",
+      selectedReceiptTab: "all",
+      selectedReceiptItem: "cabbage",
+      receiptInspectionMode: "sampling",
+      receiptSamplingRate: 34,
+      sampledReceiptItems: ["cabbage"],
+      scaleValue: 12,
+      issueScaleValue: 20,
+      outboundScaleValue: 5,
+      receiptQuantities: { cabbage: 12, apple: 15, oil: 3, tomato: 18 },
+      itemPhotos: { cabbage: [], apple: [], oil: [], tomato: [] },
+      orderPhotos: [],
+      orderNote: "",
+      receiptCompleted: { "PO-20260813-001-02": true },
+      issueCompleted: {},
+      selectedIssue: "IS-20260814-001",
+      issueQuantities: { potato: 20, tomato: 18 },
+      selectedIssueItem: "potato",
+      outboundCompleted: false,
+      outboundSourceTab: "pending",
+      directOutboundCompleted: false
+    };
+
+    const receiptChildren = [
+      { id: "PO-20260813-001-01", supplier: "泉城鲜蔬配送中心", amount: 121.20, items: ["cabbage", "apple"] },
+      { id: "PO-20260813-001-02", supplier: "齐鲁肉食供应链", amount: 254.40, items: ["pork"] },
+      { id: "PO-20260813-001-03", supplier: "鲁味粮油有限公司", amount: 504.00, items: ["oil"] }
+    ];
+
+    const receiptItems = {
+      cabbage: { id: "cabbage", child: "PO-20260813-001-01", code: "QC-VEG-0002", name: "精选大白菜", spec: "散装称重 · 一级", unit: "千克", measureMode: "weight", ordered: 12, sprite: 1, scale: 12 },
+      apple: { id: "apple", child: "PO-20260813-001-01", code: "QC-FRU-0006", name: "红富士苹果", spec: "80-85mm · 一级", unit: "千克", measureMode: "weight", ordered: 15, sprite: 4, scale: 15 },
+      pork: { id: "pork", child: "PO-20260813-001-02", code: "QL-MEA-0008", name: "鲜猪里脊", spec: "冷鲜 · 去筋膜", unit: "千克", measureMode: "weight", ordered: 8, sprite: 3, scale: 8 },
+      oil: { id: "oil", child: "PO-20260813-001-03", code: "LW-OIL-0003", name: "一级大豆油", spec: "20L/桶", unit: "桶", measureMode: "count", ordered: 3, sprite: 5, scale: 18.4 }
+    };
+
+    const issueOrders = [
+      { id: "IS-20260814-001", recipient: "A 食堂 · 101 号窗口", requester: "周蕾", requiredAt: "今天 07:20", status: "待领料", items: ["potato", "tomato"] },
+      { id: "IS-20260814-002", recipient: "A 食堂 · 103 号窗口", requester: "李梅", requiredAt: "今天 08:00", status: "待领料", items: ["oilIssue"] }
+    ];
+
+    const issueItems = {
+      potato: { id: "potato", code: "QC-VEG-0001", name: "一级土豆", spec: "散装称重 · 一级", unit: "千克", measureMode: "weight", requested: 20, available: 86, sprite: 0 },
+      tomato: { id: "tomato", code: "QC-VEG-0011", name: "精品西红柿", spec: "散装称重 · 一级", unit: "千克", measureMode: "weight", requested: 18, available: 42, sprite: 2 },
+      oilIssue: { id: "oilIssue", code: "LW-OIL-0003", name: "一级大豆油", spec: "20L/桶", unit: "桶", measureMode: "count", requested: 2, available: 16, sprite: 5 }
+    };
+
+    function icon(name) { return `<i data-lucide="${name}"></i>`; }
+    function refreshIcons() { if (window.lucide) window.lucide.createIcons(); }
+    function formatMoney(value) { return `¥${Number(value).toFixed(2)}`; }
+    function formatTime(date) {
+      return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")} ${String(date.getHours()).padStart(2,"0")}:${String(date.getMinutes()).padStart(2,"0")}`;
+    }
+
+    function topbar() {
+      return `<header class="topbar"><div class="warehouse-name"><div class="brand-mark">U</div><strong>主校区总库</strong></div><div class="top-meta">${icon("clock-3")}<span id="current-time">${formatTime(state.now)}</span></div><div class="top-meta user">${icon("circle-user-round")}<span>当前用户：<strong>赵平</strong></span></div><button class="icon-button logout" type="button" data-action="logout" title="退出登录">${icon("log-out")}</button></header>`;
+    }
+
+    function pageHead(title, description, backAction = "home") {
+      return `<div class="page-head"><div><h1>${title}</h1><p>${description}</p></div><div class="page-actions">${backAction ? `<button class="button secondary" type="button" data-action="${backAction}">${icon("arrow-left")}<span>返回</span></button>` : ""}</div></div>`;
+    }
+
+    function renderLogin() {
+      return `<main class="login-shell"><section class="login-panel"><div class="brand"><div class="brand-mark">U</div><div><strong>UniCater</strong><span>库房 PAD 作业端</span></div></div><h1>库管登录</h1><p>登录后仅展示本人被分配库房的现场任务。</p><div class="field"><label for="phone">手机号</label><input class="input" id="phone" value="138 0000 5276"></div><div class="field"><label for="code">短信验证码</label><input class="input" id="code" value="246810"></div><button class="button primary full" type="button" data-action="login">${icon("log-in")}<span>登录库房作业端</span></button></section></main>`;
+    }
+
+    function renderHome() {
+      const openReceiptCount = receiptChildren.filter(entry => !state.receiptCompleted[entry.id]).length;
+      return `${pageHead("库房作业", "请选择本次现场操作。", "")}<div class="task-launcher"><button class="launch-button" type="button" data-action="open-receipts"><span class="launch-icon">${icon("package-check")}</span><h2>入库</h2><span>验收已确认采购订单并生成入库凭证</span><span class="launch-count">${openReceiptCount} 个待办</span></button><button class="launch-button" type="button" data-action="open-outbound"><span class="launch-icon">${icon("package-minus")}</span><h2>出库</h2><span>执行待出库单、领料单或直接出库</span><span class="launch-count">2 个待办</span></button><button class="launch-button" type="button" data-action="open-issues"><span class="launch-icon">${icon("hand-coins")}</span><h2>领料</h2><span>按领料单向食堂或档口完成出库交接</span><span class="launch-count">2 个待办</span></button></div><div class="notice info" style="margin-top:16px;">${icon("scale")}<div><strong>蓝牙电子秤已连接：</strong>主库 1 号秤 · 电量 82%。称重商品是否必须称重、抽检比例均由学校统一配置。</div></div>`;
+    }
+
+    function renderReceiptList() {
+      const completed = state.receiptListTab === "completed";
+      const openChildren = receiptChildren.filter(entry => !state.receiptCompleted[entry.id]);
+      const completedChildren = receiptChildren.filter(entry => state.receiptCompleted[entry.id]);
+      const childRow = (entry, index) => {
+        const done = Boolean(state.receiptCompleted[entry.id]);
+        return `<tr>${index === 0 ? `<td rowspan="${receiptChildren.length}"><strong>PO-20260813-001</strong><br><span class="footer-hint">${receiptChildren.length} 个子订单</span></td>` : ""}<td>${entry.id}</td><td>${entry.supplier}</td><td>${entry.items.length} 行</td><td>今天 07:00</td><td>主校区总库</td><td><span class="status ${done ? "active" : "pending"}">${done ? "已完成" : "待验收"}</span></td><td><button class="table-action" type="button" data-action="${done ? "show-locked" : "start-receipt"}" ${done ? "" : `data-child="${entry.id}"`}>${done ? "查看凭证" : "入库"}</button></td></tr>`;
+      };
+      const completedRows = `<tr><td>PO-20260812-008</td><td>PO-20260812-008-01</td><td>泉城鲜蔬配送中心</td><td>8 行</td><td>08-13 16:00</td><td>主校区总库</td><td><span class="status active">已完成</span></td><td><button class="table-action" type="button" data-action="show-locked">查看凭证</button></td></tr>${completedChildren.map((entry, index) => `<tr><td>${index === 0 ? "PO-20260813-001" : ""}</td><td>${entry.id}</td><td>${entry.supplier}</td><td>${entry.items.length} 行</td><td>08-14 07:00</td><td>主校区总库</td><td><span class="status active">已完成</span></td><td><button class="table-action" type="button" data-action="show-locked">查看凭证</button></td></tr>`).join("")}`;
+      return `${pageHead("验收入库", "只展示已确认且尚未完成的采购子订单，完成后不可再次入库。")}
+      <div class="metric-row"><div class="metric"><span>待验收子订单</span><strong>${openChildren.length}</strong></div><div class="metric"><span>今日已完成</span><strong>${4 + completedChildren.length}</strong></div><div class="metric"><span>待补材料</span><strong>1</strong></div><div class="metric"><span>蓝牙秤</span><strong style="color:var(--primary);">已连接</strong></div></div>
+      <section class="workspace"><div class="workspace-head"><div class="tabs" style="border:0;"><button class="tab ${!completed ? "active" : ""}" type="button" data-receipt-list-tab="open">未完成</button><button class="tab ${completed ? "active" : ""}" type="button" data-receipt-list-tab="completed">已完成</button></div><span class="footer-hint">可按主订单一次处理多个子订单</span></div><div class="workspace-body"><div class="toolbar"><input class="input" placeholder="订单号或供应商"><select class="select"><option>全部供应商</option><option>泉城鲜蔬配送中心</option><option>齐鲁肉食供应链</option></select></div><div class="table-wrap"><table><thead><tr><th>主订单</th><th>供应商子订单</th><th>供应商</th><th>商品</th><th>计划送达</th><th>收货点</th><th>状态</th><th>操作</th></tr></thead><tbody>${completed ? completedRows : receiptChildren.map(childRow).join("")}</tbody></table></div></div>${!completed && openChildren.length ? `<div class="workspace-foot"><span class="footer-hint">主订单 PO-20260813-001 有 ${openChildren.length} 个未完成子订单</span><button class="button primary" type="button" data-action="start-receipt" data-child="all">${icon("list-checks")}<span>全部未完成子订单入库</span></button></div>` : ""}</section>`;
+    }
+
+    function receiptVisibleItems() {
+      if (state.selectedReceiptTab === "all") return Object.values(receiptItems).filter(item => !state.receiptCompleted[item.child]);
+      return Object.values(receiptItems).filter(item => item.child === state.selectedReceiptTab && !state.receiptCompleted[item.child]);
+    }
+
+    function renderReceiptDetail() {
+      const visibleItems = receiptVisibleItems();
+      if (!visibleItems.find(item => item.id === state.selectedReceiptItem)) state.selectedReceiptItem = visibleItems[0]?.id || "cabbage";
+      const selected = receiptItems[state.selectedReceiptItem] || visibleItems[0];
+      const photos = state.itemPhotos[selected.id] || [];
+      const child = receiptChildren.find(entry => entry.id === selected.child);
+      const openChildren = receiptChildren.filter(entry => !state.receiptCompleted[entry.id]);
+      return `${pageHead("采购订单验收入库", "选择全部或单个子订单处理；提交时按供应商子订单分别生成入库凭证。", "back-receipts")}
+      <section class="workspace"><div class="workspace-head"><div><h2>PO-20260813-001</h2><span class="footer-hint">收货库房：主校区总库 · 送达时间：今天 07:00</span></div><div class="page-actions"><button class="button secondary" type="button" data-action="order-attachments">${icon("paperclip")}<span>订单附件</span><span class="status info">${state.orderPhotos.length}</span></button></div></div><div class="tabs"><button class="tab ${state.selectedReceiptTab === "all" ? "active" : ""}" type="button" data-receipt-tab="all">全部未完成（${openChildren.length}）</button>${receiptChildren.map(entry => `<button class="tab ${state.selectedReceiptTab === entry.id ? "active" : ""} ${state.receiptCompleted[entry.id] ? "completed" : ""}" type="button" data-receipt-tab="${entry.id}" ${state.receiptCompleted[entry.id] ? "disabled" : ""}>${entry.supplier.replace("配送中心", "").replace("有限公司", "")} ${state.receiptCompleted[entry.id] ? "· 已完成" : ""}</button>`).join("")}</div><div class="receipt-layout"><aside class="item-pane"><div class="item-pane-head"><strong>${state.selectedReceiptTab === "all" ? "全部未完成商品" : child?.supplier || "商品"}</strong><br><span class="footer-hint">点击商品进行数量、称重和照片确认</span></div><div class="item-list">${visibleItems.map(item => { const qty = Number(state.receiptQuantities[item.id] || 0); return `<button class="item-card ${state.selectedReceiptItem === item.id ? "active" : ""} ${qty >= 0 ? "complete" : ""}" type="button" data-receipt-item="${item.id}"><span class="food-thumb" style="--sprite:${item.sprite}"></span><span class="item-title"><strong>${item.name}</strong><span>${item.code} · ${item.spec}</span><span>${receiptChildren.find(c => c.id === item.child)?.supplier}</span></span><span class="item-qty"><strong>${qty} ${item.unit}</strong><span>订单 ${item.ordered}</span></span></button>`; }).join("")}</div></aside><div class="operation-pane"><div class="selected-product"><div><h2>${selected.name}</h2><p>${selected.code} · ${selected.spec} · ${child?.supplier}</p></div><span class="status pending">待确认</span></div><div class="quantity-grid"><section class="quantity-card"><h3>入库结果</h3><div class="quantity-summary"><div><span>订单数量</span><strong>${selected.ordered} ${selected.unit}</strong></div><div><span>本次差异</span><strong>${(Number(state.receiptQuantities[selected.id] || 0) - selected.ordered).toFixed(selected.unit === "千克" ? 3 : 0)} ${selected.unit}</strong></div></div><div class="field" style="margin-top:0;"><label for="receipt-quantity">入库数量（唯一库存结果数量）</label><input class="input" id="receipt-quantity" type="number" step="${selected.unit === "千克" ? ".001" : "1"}" value="${state.receiptQuantities[selected.id] ?? selected.ordered}" data-receipt-quantity="${selected.id}"></div>${Number(state.receiptQuantities[selected.id]) !== selected.ordered ? `<div class="field"><label for="receipt-reason">差异原因</label><select class="select" id="receipt-reason"><option>少送</option><option>质量不合格</option><option>多送并接收</option><option>其他</option></select></div>` : ""}<div class="notice info" style="margin-top:10px;">${icon("info")}<div>${selected.unit === "千克" ? "全量称重时可将稳定读数直接计入入库数量。" : "桶装商品按桶计入库存，秤重只保存为抽检记录。"}</div></div></section><section class="quantity-card"><div class="scale-head"><h3 style="margin:0;">蓝牙电子秤</h3><span class="scale-connected">${icon("bluetooth-connected")}主库 1 号秤</span></div><div class="segmented"><button class="segment ${state.weighingMode === "full" ? "active" : ""}" type="button" data-weigh-mode="full">全量称重</button><button class="segment ${state.weighingMode === "sample" ? "active" : ""}" type="button" data-weigh-mode="sample">抽检称重</button></div><div class="scale-display" style="margin-top:10px;"><strong>${state.scaleValue.toFixed(3)} kg</strong><span>读数稳定 · 06:42:18</span></div><div class="scale-actions"><button class="button secondary" type="button" data-action="refresh-scale">${icon("refresh-cw")}<span>重新读取</span></button><button class="button primary" type="button" data-action="record-weight">${icon(state.weighingMode === "full" ? "scale" : "clipboard-plus")}<span>${state.weighingMode === "full" && selected.unit === "千克" ? "计入入库数量" : "记录抽检"}</span></button></div><p class="footer-hint" style="margin:8px 0 0;">${state.weighingMode === "sample" ? "抽检重量只作为验收证据，不改变库存数量。已记录 1 次。" : "全量称重读数可自动带入称重商品的入库数量。"}</p></section></div><section class="evidence-section"><div class="evidence-head"><h3>商品照片与检验材料</h3><div class="evidence-actions"><button class="button secondary compact" type="button" data-action="add-photo">${icon("camera")}<span>拍摄商品</span></button><button class="button secondary compact" type="button" data-action="add-report">${icon("file-scan")}<span>拍摄检验报告</span></button></div></div><div class="photo-strip">${photos.length ? photos.map((photo, index) => `<div class="photo-tile ${photo.type === "report" ? "report" : ""}">${icon(photo.type === "report" ? "file-check-2" : "image")}<span>${photo.type === "report" ? "检验报告" : `商品照片 ${index + 1}`}</span></div>`).join("") : `<div class="empty-evidence">每个商品可拍摄并上传多张照片</div>`}</div></section><div class="order-evidence"><div class="notice success">${icon("shield-check")}<div><strong>验收规则</strong><br>普通商品照片为选填；异常商品至少上传 1 张照片。检验报告可在商品或订单级标注。</div></div><div><span class="footer-hint">当前商品</span><strong style="display:block;margin-top:4px;">${photos.length} 张附件</strong></div></div></div></div><div class="workspace-foot"><span class="footer-hint">提交后生成 ${state.selectedReceiptTab === "all" ? openChildren.length : 1} 张入库凭证；已入库凭证只能冲销，不能修改。</span><button class="button primary" type="button" data-action="submit-receipt">${icon("badge-check")}<span>提交验收入库</span></button></div></section>`;
+    }
+
+    function renderIssueList() {
+      return `${pageHead("领料", "需求转换已占用库存并自动生成领料单，可在 PAD 或后台完成发料。")}
+      <div class="metric-row"><div class="metric"><span>待领料</span><strong>${issueOrders.filter(order => !state.issueCompleted[order.id]).length}</strong></div><div class="metric"><span>今日已发料</span><strong>${12 + Object.keys(state.issueCompleted).length}</strong></div><div class="metric"><span>占用库存</span><strong>268.5 kg</strong></div><div class="metric"><span>差异完成</span><strong>1</strong></div></div><section class="workspace"><div class="workspace-head"><h2>待领料任务</h2><span class="footer-hint">领料单生成时已占用申请数量</span></div><div class="workspace-body"><div class="table-wrap"><table><thead><tr><th>领料单</th><th>领料方</th><th>领料人</th><th>商品</th><th>计划时间</th><th>状态</th><th>操作</th></tr></thead><tbody>${issueOrders.map(order => `<tr><td><strong>${order.id}</strong></td><td>${order.recipient}</td><td>${order.requester}</td><td>${order.items.length} 行</td><td>${order.requiredAt}</td><td><span class="status ${state.issueCompleted[order.id] ? "active" : "pending"}">${state.issueCompleted[order.id] ? "已完成" : order.status}</span></td><td><button class="table-action" type="button" data-action="start-issue" data-issue="${order.id}">${state.issueCompleted[order.id] ? "查看凭证" : "发料"}</button></td></tr>`).join("")}</tbody></table></div></div></section>`;
+    }
+
+    function renderIssueDetail() {
+      const order = issueOrders.find(item => item.id === state.selectedIssue) || issueOrders[0];
+      const items = order.items.map(id => issueItems[id]);
+      const selected = issueItems[state.selectedIssueItem] || items[0];
+      const completed = Boolean(state.issueCompleted[order.id]);
+      return `${pageHead("领料出库", `${order.id} · ${order.recipient}`, "back-issues")}<section class="workspace"><div class="workspace-head"><div><h2>${order.id}</h2><span class="footer-hint">领料人：${order.requester} · 计划时间：${order.requiredAt}</span></div><span class="status ${completed ? "active" : "pending"}">${completed ? "已完成" : "待领料"}</span></div><div class="receipt-layout"><aside class="item-pane"><div class="item-pane-head"><strong>领料商品</strong><br><span class="footer-hint">申请数量已占用，不可被其他领料单使用</span></div><div class="item-list">${items.map(item => `<button class="item-card ${state.selectedIssueItem === item.id ? "active" : ""}" type="button" data-issue-item="${item.id}"><span class="food-thumb" style="--sprite:${item.sprite}"></span><span class="item-title"><strong>${item.name}</strong><span>${item.code} · ${item.spec}</span><span>可领数量 ${item.available} ${item.unit}</span></span><span class="item-qty"><strong>${state.issueQuantities[item.id] ?? item.requested} ${item.unit}</strong><span>申请 ${item.requested}</span></span></button>`).join("")}</div></aside><div class="operation-pane"><div class="selected-product"><div><h2>${selected.name}</h2><p>${selected.code} · ${selected.spec}</p></div><span class="status info">移动平均价 ¥${selected.id === "potato" ? "2.41" : "4.66"}</span></div><div class="quantity-grid"><section class="quantity-card"><h3>实际发出</h3><div class="quantity-summary"><div><span>申请数量</span><strong>${selected.requested} ${selected.unit}</strong></div><div><span>当前可领</span><strong>${selected.available} ${selected.unit}</strong></div></div><div class="field" style="margin-top:0;"><label for="issue-quantity">实际发出数量</label><input class="input" id="issue-quantity" type="number" value="${state.issueQuantities[selected.id] ?? selected.requested}" data-issue-quantity="${selected.id}" ${completed ? "disabled" : ""}></div>${Number(state.issueQuantities[selected.id] ?? selected.requested) !== selected.requested ? `<div class="field"><label>差异原因</label><select class="select"><option>库存实物不足</option><option>领料方减少领取</option><option>质量异常</option></select></div>` : ""}</section><section class="quantity-card"><h3>交接确认</h3><div class="quantity-summary"><div><span>领料人</span><strong>${order.requester}</strong></div><div><span>成本归属</span><strong>${order.recipient.split(" · ")[1]}</strong></div></div><div class="notice info">${icon("badge-info")}<div>领料完成后扣减实际库存，释放整张领料单占用，成本按移动加权平均价归属原需求档口。</div></div><div class="field"><label>领料人确认</label><select class="select" ${completed ? "disabled" : ""}><option>扫码确认 · ${order.requester}</option><option>手写签字</option></select></div></section></div></div></div><div class="workspace-foot"><span class="footer-hint">少发差额不会自动生成采购订单，系统提示采购人员按需新建需求。</span>${completed ? `<span class="status active">物料凭证 MD-20260814-0016</span>` : `<button class="button primary" type="button" data-action="submit-issue">${icon("package-check")}<span>确认领料出库</span></button>`}</div></section>`;
+    }
+
+    function renderOutboundList() {
+      return `${pageHead("其他出库", "只执行已经审批的供应商退货、报损等来源单据，不允许 PAD 无来源直接扣库。")}
+      <div class="metric-row"><div class="metric"><span>待执行</span><strong>${state.outboundCompleted ? 1 : 2}</strong></div><div class="metric"><span>供应商退货</span><strong>1</strong></div><div class="metric"><span>报损处理</span><strong>1</strong></div><div class="metric"><span>今日已完成</span><strong>${state.outboundCompleted ? 5 : 4}</strong></div></div><section class="workspace"><div class="workspace-head"><h2>已审批出库任务</h2><span class="footer-hint">普通领料请从“领料”入口执行</span></div><div class="workspace-body"><div class="table-wrap"><table><thead><tr><th>出库单</th><th>类型</th><th>来源单据</th><th>商品</th><th>数量</th><th>审批结果</th><th>状态</th><th>操作</th></tr></thead><tbody><tr><td><strong>OUT-20260814-003</strong></td><td>供应商退货</td><td>RTV-20260814-001</td><td>红富士苹果</td><td>5 千克</td><td><span class="status active">已审批</span></td><td><span class="status ${state.outboundCompleted ? "active" : "pending"}">${state.outboundCompleted ? "已出库" : "待执行"}</span></td><td><button class="table-action" type="button" data-action="start-outbound">${state.outboundCompleted ? "查看凭证" : "执行出库"}</button></td></tr><tr><td><strong>OUT-20260814-004</strong></td><td>报损出库</td><td>ADJ-20260814-002</td><td>精选大白菜</td><td>3 千克</td><td><span class="status active">已审批</span></td><td><span class="status pending">待执行</span></td><td><button class="table-action" type="button" data-action="start-outbound">执行出库</button></td></tr></tbody></table></div></div></section>`;
+    }
+
+    function renderOutboundDetail() {
+      return `${pageHead("执行其他出库", "OUT-20260814-003 · 供应商退货", "back-outbound")}<section class="workspace"><div class="workspace-head"><div><h2>红富士苹果</h2><span class="footer-hint">来源入库单 RCV-20260813-008 · 退回泉城鲜蔬配送中心</span></div><span class="status ${state.outboundCompleted ? "active" : "pending"}">${state.outboundCompleted ? "已出库" : "待执行"}</span></div><div class="workspace-body"><div class="quantity-grid"><section class="quantity-card"><h3>出库信息</h3><div class="quantity-summary"><div><span>审批数量</span><strong>5 千克</strong></div><div><span>当前可用</span><strong>38 千克</strong></div></div><div class="field"><label>实际出库数量</label><input class="input" type="number" value="5" ${state.outboundCompleted ? "disabled" : ""}></div><div class="field"><label>交接对象</label><input class="input" value="赵海 · 泉城鲜蔬配送中心" readonly></div></section><section class="quantity-card"><h3>来源与证据</h3><div class="notice warning">${icon("triangle-alert")}<div>该出库将冲减原入库库存和未结算供应商金额。已结算时进入下一账期调整。</div></div><div class="field"><label>现场照片</label><button class="button secondary" type="button" ${state.outboundCompleted ? "disabled" : ""}>${icon("camera")}<span>拍摄退货交接</span></button></div></section></div></div><div class="workspace-foot"><span class="footer-hint">过账后生成不可编辑物料凭证，错误需冲销。</span>${state.outboundCompleted ? `<span class="status active">物料凭证 MD-20260814-0017</span>` : `<button class="button primary" type="button" data-action="submit-outbound">${icon("package-minus")}<span>确认出库</span></button>`}</div></section>`;
+    }
+
+    // The active warehouse policy determines sampling. Operators only execute the assigned checks.
+    function receiptNeedsScale(item) {
+      return item.measureMode === "weight" && (state.receiptInspectionMode === "full" || state.sampledReceiptItems.includes(item.id));
+    }
+
+    function renderReceiptDetail() {
+      const visibleItems = receiptVisibleItems();
+      if (!visibleItems.find(item => item.id === state.selectedReceiptItem)) state.selectedReceiptItem = visibleItems[0]?.id || "cabbage";
+      const selected = receiptItems[state.selectedReceiptItem] || visibleItems[0];
+      const photos = state.itemPhotos[selected.id] || [];
+      const child = receiptChildren.find(entry => entry.id === selected.child);
+      const openChildren = receiptChildren.filter(entry => !state.receiptCompleted[entry.id]);
+      const isWeight = selected.measureMode === "weight";
+      const needsScale = receiptNeedsScale(selected);
+      const scalePolicy = state.receiptInspectionMode === "full" ? "全量称重" : `系统抽检 ${state.receiptSamplingRate}%`;
+      return `${pageHead("采购订单验收入库", "系统按学校配置安排抽检；数量商品与称重商品只填写一种入库结果。", "back-receipts")}
+      <section class="workspace"><div class="workspace-head"><div><h2>PO-20260813-001</h2><span class="footer-hint">收货库房：主校区总库 · 送达时间：今天 07:00</span></div><div class="page-actions"><button class="button secondary" type="button" data-action="order-attachments">${icon("paperclip")}<span>订单附件</span><span class="status info">${state.orderPhotos.length}</span></button></div></div>
+      <div class="tabs"><button class="tab ${state.selectedReceiptTab === "all" ? "active" : ""}" type="button" data-receipt-tab="all">全部未完成（${openChildren.length}）</button>${receiptChildren.map(entry => `<button class="tab ${state.selectedReceiptTab === entry.id ? "active" : ""} ${state.receiptCompleted[entry.id] ? "completed" : ""}" type="button" data-receipt-tab="${entry.id}" ${state.receiptCompleted[entry.id] ? "disabled" : ""}>${entry.id} ${state.receiptCompleted[entry.id] ? "· 已完成" : ""}</button>`).join("")}</div>
+      <div class="receipt-layout"><aside class="item-pane"><div class="item-pane-head"><strong>${state.selectedReceiptTab === "all" ? "全部未完成商品" : child?.supplier || "商品"}</strong><br><span class="footer-hint">系统会标记当前需要称重抽检的货品</span></div><div class="item-list">${visibleItems.map(item => { const qty = Number(state.receiptQuantities[item.id] || 0); const sample = receiptNeedsScale(item); return `<button class="item-card ${state.selectedReceiptItem === item.id ? "active" : ""} complete" type="button" data-receipt-item="${item.id}"><span class="food-thumb" style="--sprite:${item.sprite}"></span><span class="item-title"><strong>${item.name}</strong><span>${item.code} · ${item.spec}</span><span>${item.measureMode === "weight" ? (sample ? "本轮抽检称重" : "按重量入库") : "按数量入库"}</span></span><span class="item-qty"><strong>${qty} ${item.unit}</strong><span>订单 ${item.ordered}</span></span></button>`; }).join("")}</div></aside>
+      <div class="operation-pane"><div class="selected-product"><div><h2>${selected.name}</h2><p>${selected.code} · ${selected.spec} · ${child?.supplier}</p></div><span class="status ${needsScale ? "info" : "pending"}">${needsScale ? "待称重" : "待确认"}</span></div>
+      <div class="notice info" style="margin:0 0 14px;">${icon("clipboard-check")}<div><strong>${scalePolicy}</strong><br>${state.receiptInspectionMode === "sampling" ? `本订单有 3 个称重商品，系统随机抽中 ${state.sampledReceiptItems.length} 个。请按左侧带“本轮抽检称重”的商品依次完成称重和拍照。` : "所有称重商品须读取电子秤稳定值；计数商品不展示重量。"}</div></div>
+      <div class="quantity-grid"><section class="quantity-card"><h3>入库结果</h3><div class="quantity-summary"><div><span>订单${isWeight ? "重量" : "数量"}</span><strong>${selected.ordered} ${selected.unit}</strong></div><div><span>本次差异</span><strong>${(Number(state.receiptQuantities[selected.id] || 0) - selected.ordered).toFixed(isWeight ? 3 : 0)} ${selected.unit}</strong></div></div><div class="field" style="margin-top:0;"><label for="receipt-quantity">${isWeight ? "入库重量" : "入库数量"}（唯一库存结果）</label><input class="input" id="receipt-quantity" type="number" step="${isWeight ? ".001" : "1"}" value="${state.receiptQuantities[selected.id] ?? selected.ordered}" data-receipt-quantity="${selected.id}"></div>${Number(state.receiptQuantities[selected.id]) !== selected.ordered ? `<div class="field"><label for="receipt-reason">差异原因</label><select class="select" id="receipt-reason"><option>少送</option><option>质量不合格</option><option>多送并接收</option><option>其他</option></select></div>` : ""}</section>
+      ${isWeight ? `<section class="quantity-card"><div class="scale-head"><h3 style="margin:0;">蓝牙电子秤</h3><span class="scale-connected">${icon("bluetooth-connected")}主库 1 号秤</span></div>${needsScale ? `<div class="scale-display" style="margin-top:10px;"><strong>${state.scaleValue.toFixed(3)} kg</strong><span>读数稳定 · 06:42:18</span></div><div class="scale-actions"><button class="button secondary" type="button" data-action="refresh-scale">${icon("refresh-cw")}<span>重新读取</span></button><button class="button primary" type="button" data-action="record-weight">${icon("clipboard-plus")}<span>${state.receiptInspectionMode === "full" ? "写入入库重量" : "记录抽检"}</span></button></div><p class="footer-hint" style="margin:8px 0 0;">${state.receiptInspectionMode === "full" ? "称重值将写入入库重量。" : "抽检重量作为验收证据，不改变入库重量。"}</p>` : `<div class="notice info" style="margin-top:12px;">${icon("circle-check")}<div>本商品未被系统抽中，本次无需称重；可直接填写入库重量并拍照留存。</div></div>`}</section>` : `<section class="quantity-card"><h3>计数商品</h3><div class="notice info" style="margin-top:10px;">${icon("package-check")}<div>该商品以“${selected.unit}”为库存单位，本次不展示电子秤重量。请核对包装数量与商品照片。</div></div></section>`}</div>
+      <section class="evidence-section"><div class="evidence-head"><h3>商品照片与检验材料</h3><div class="evidence-actions"><button class="button secondary compact" type="button" data-action="add-photo">${icon("camera")}<span>拍摄商品</span></button><button class="button secondary compact" type="button" data-action="add-report">${icon("file-scan")}<span>拍摄检验报告</span></button></div></div><div class="photo-strip">${photos.length ? photos.map((photo, index) => `<div class="photo-tile ${photo.type === "report" ? "report" : ""}">${icon(photo.type === "report" ? "file-check-2" : "image")}<span>${photo.type === "report" ? "检验报告" : `商品照片 ${index + 1}`}</span></div>`).join("") : `<div class="empty-evidence">${needsScale ? "本轮抽检商品请完成称重并拍照" : "每个商品可拍摄并上传多张照片"}</div>`}</div></section></div></div>
+      <div class="workspace-foot"><span class="footer-hint">提交后按供应商子订单生成入库凭证；已完成单据只能冲销，不能重复入库。</span><button class="button primary" type="button" data-action="submit-receipt">${icon("badge-check")}<span>提交验收入库</span></button></div></section>`;
+    }
+
+    function renderIssueList() {
+      return `${pageHead("领料", "领料单已占用库存，库管在 PAD 或后台完成出库。")}
+      <div class="metric-row"><div class="metric"><span>待领料</span><strong>${issueOrders.filter(order => !state.issueCompleted[order.id]).length}</strong></div><div class="metric"><span>今日已出库</span><strong>${12 + Object.keys(state.issueCompleted).length}</strong></div><div class="metric"><span>占用库存</span><strong>268.5 kg</strong></div><div class="metric"><span>称重规则</span><strong>已启用</strong></div></div><section class="workspace"><div class="workspace-head"><h2>待领料任务</h2><span class="footer-hint">称重商品必须读取电子秤稳定值</span></div><div class="workspace-body"><div class="table-wrap"><table><thead><tr><th>领料单</th><th>领料方</th><th>领料人</th><th>商品</th><th>计划时间</th><th>状态</th><th>操作</th></tr></thead><tbody>${issueOrders.map(order => `<tr><td><strong>${order.id}</strong></td><td>${order.recipient}</td><td>${order.requester}</td><td>${order.items.length} 行</td><td>${order.requiredAt}</td><td><span class="status ${state.issueCompleted[order.id] ? "active" : "pending"}">${state.issueCompleted[order.id] ? "已完成" : order.status}</span></td><td><button class="table-action" type="button" data-action="start-issue" data-issue="${order.id}">${state.issueCompleted[order.id] ? "查看流水" : "出库"}</button></td></tr>`).join("")}</tbody></table></div></div></section>`;
+    }
+
+    function renderIssueDetail() {
+      const order = issueOrders.find(item => item.id === state.selectedIssue) || issueOrders[0];
+      const items = order.items.map(id => issueItems[id]);
+      const selected = issueItems[state.selectedIssueItem] || items[0];
+      const completed = Boolean(state.issueCompleted[order.id]);
+      const weighted = selected.measureMode === "weight";
+      return `${pageHead("领料出库", `${order.id} · ${order.recipient}`, "back-issues")}<section class="workspace"><div class="workspace-head"><div><h2>${order.id}</h2><span class="footer-hint">领料人：${order.requester} · 计划时间：${order.requiredAt}</span></div><span class="status ${completed ? "active" : "pending"}">${completed ? "已完成" : "待领料"}</span></div><div class="receipt-layout"><aside class="item-pane"><div class="item-pane-head"><strong>领料商品</strong><br><span class="footer-hint">申请数量已占用，不可被其他领料单使用</span></div><div class="item-list">${items.map(item => `<button class="item-card ${state.selectedIssueItem === item.id ? "active" : ""}" type="button" data-issue-item="${item.id}"><span class="food-thumb" style="--sprite:${item.sprite}"></span><span class="item-title"><strong>${item.name}</strong><span>${item.code} · ${item.spec}</span><span>${item.measureMode === "weight" ? "出库必须称重" : "按数量出库"}</span></span><span class="item-qty"><strong>${state.issueQuantities[item.id] ?? item.requested} ${item.unit}</strong><span>申请 ${item.requested}</span></span></button>`).join("")}</div></aside><div class="operation-pane"><div class="selected-product"><div><h2>${selected.name}</h2><p>${selected.code} · ${selected.spec}</p></div><span class="status info">${weighted ? "需称重" : "计数商品"}</span></div><div class="quantity-grid"><section class="quantity-card"><h3>实际出库</h3><div class="quantity-summary"><div><span>申请${weighted ? "重量" : "数量"}</span><strong>${selected.requested} ${selected.unit}</strong></div><div><span>当前可领</span><strong>${selected.available} ${selected.unit}</strong></div></div><div class="field" style="margin-top:0;"><label for="issue-quantity">实际出库${weighted ? "重量" : "数量"}</label><input class="input" id="issue-quantity" type="number" step="${weighted ? ".001" : "1"}" value="${state.issueQuantities[selected.id] ?? selected.requested}" data-issue-quantity="${selected.id}" ${completed ? "disabled" : ""}></div></section>${weighted ? `<section class="quantity-card"><div class="scale-head"><h3 style="margin:0;">蓝牙电子秤</h3><span class="scale-connected">${icon("bluetooth-connected")}主库 1 号秤</span></div><div class="scale-display" style="margin-top:10px;"><strong>${state.issueScaleValue.toFixed(3)} kg</strong><span>读数稳定 · 必须记录</span></div><div class="scale-actions"><button class="button secondary" type="button" data-action="refresh-issue-scale">${icon("refresh-cw")}<span>重新读取</span></button><button class="button primary" type="button" data-action="record-issue-weight">${icon("scale")}<span>写入出库重量</span></button></div></section>` : `<section class="quantity-card"><h3>交接确认</h3><div class="notice info" style="margin-top:10px;">${icon("package-check")}<div>该商品按包装数量出库，不展示电子秤重量。</div></div></section>`}</div></div></div><div class="workspace-foot"><span class="footer-hint">完成出库后生成库存流水并释放本领料单占用。</span>${completed ? `<span class="status active">库存流水 MD-20260814-0016</span>` : `<button class="button primary" type="button" data-action="submit-issue">${icon("package-check")}<span>确认领料出库</span></button>`}</div></section>`;
+    }
+
+    function renderOutboundList() {
+      const directRow = state.directOutboundCompleted ? `<tr><td><strong>OUT-20260821-013</strong></td><td>直接出库</td><td>库房临时调拨</td><td>一级大豆油</td><td>2 桶</td><td><span class="status active">已出库</span></td><td><button class="table-action" type="button" data-action="show-locked">查看流水</button></td></tr>` : "";
+      const pending = `<tr><td><strong>OUT-20260814-003</strong></td><td>供应商退货</td><td>RTV-20260814-001</td><td>红富士苹果</td><td>5 千克</td><td><span class="status ${state.outboundCompleted ? "active" : "pending"}">${state.outboundCompleted ? "已出库" : "待出库"}</span></td><td><button class="table-action" type="button" data-action="start-outbound">${state.outboundCompleted ? "查看流水" : "执行出库"}</button></td></tr><tr><td><strong>OUT-20260814-004</strong></td><td>报损出库</td><td>ADJ-20260814-002</td><td>精选大白菜</td><td>3 千克</td><td><span class="status pending">待出库</span></td><td><button class="table-action" type="button" data-action="start-outbound">执行出库</button></td></tr>${directRow}`;
+      const requisition = issueOrders.map(order => `<tr><td><strong>${order.id}</strong></td><td>领料单</td><td>${order.recipient}</td><td>${order.items.length} 行</td><td>${order.requiredAt}</td><td><span class="status ${state.issueCompleted[order.id] ? "active" : "pending"}">${state.issueCompleted[order.id] ? "已出库" : "待出库"}</span></td><td><button class="table-action" type="button" data-action="start-issue" data-issue="${order.id}">${state.issueCompleted[order.id] ? "查看流水" : "按领料单出库"}</button></td></tr>`).join("");
+      return `${pageHead("出库", "可直接出库，也可执行待出库单或领料单；称重规则由学校统一配置。 ")}<div class="metric-row"><div class="metric"><span>待出库单</span><strong>${state.outboundCompleted ? 1 : 2}</strong></div><div class="metric"><span>待领料单</span><strong>${issueOrders.filter(order => !state.issueCompleted[order.id]).length}</strong></div><div class="metric"><span>今日已出库</span><strong>${state.directOutboundCompleted ? 6 : 5}</strong></div></div><section class="workspace"><div class="workspace-head"><div class="tabs" style="border:0;"><button class="tab ${state.outboundSourceTab === "pending" ? "active" : ""}" type="button" data-outbound-source-tab="pending">待出库单</button><button class="tab ${state.outboundSourceTab === "requisition" ? "active" : ""}" type="button" data-outbound-source-tab="requisition">领料单</button></div><button class="button primary" type="button" data-action="open-direct-outbound">${icon("plus")}<span>直接出库</span></button></div><div class="workspace-body"><div class="table-wrap"><table><thead><tr><th>单据号</th><th>类型</th><th>来源 / 领用方</th><th>商品</th><th>数量 / 时间</th><th>状态</th><th>操作</th></tr></thead><tbody>${state.outboundSourceTab === "pending" ? pending : requisition}</tbody></table></div></div></section>`;
+    }
+
+    function renderOutboundDetail() {
+      return `${pageHead("执行出库", "OUT-20260814-003 · 供应商退货", "back-outbound")}<section class="workspace"><div class="workspace-head"><div><h2>红富士苹果</h2><span class="footer-hint">来源入库单 RCV-20260813-008 · 退回泉城鲜蔬配送中心</span></div><span class="status ${state.outboundCompleted ? "active" : "pending"}">${state.outboundCompleted ? "已出库" : "待出库"}</span></div><div class="workspace-body"><div class="quantity-grid"><section class="quantity-card"><h3>出库重量</h3><div class="quantity-summary"><div><span>审批重量</span><strong>5 千克</strong></div><div><span>当前可用</span><strong>38 千克</strong></div></div><div class="field"><label>实际出库重量</label><input class="input" type="number" step=".001" value="5" ${state.outboundCompleted ? "disabled" : ""}></div><div class="field"><label>交接对象</label><input class="input" value="赵海 · 泉城鲜蔬配送中心" readonly></div></section><section class="quantity-card"><div class="scale-head"><h3 style="margin:0;">蓝牙电子秤</h3><span class="scale-connected">${icon("bluetooth-connected")}主库 1 号秤</span></div><div class="scale-display" style="margin-top:10px;"><strong>${state.outboundScaleValue.toFixed(3)} kg</strong><span>读数稳定 · 必须记录</span></div><div class="scale-actions"><button class="button secondary" type="button" data-action="refresh-outbound-scale">${icon("refresh-cw")}<span>重新读取</span></button><button class="button primary" type="button" data-action="record-outbound-weight">${icon("scale")}<span>写入出库重量</span></button></div><div class="field"><label>现场照片</label><button class="button secondary" type="button" ${state.outboundCompleted ? "disabled" : ""}>${icon("camera")}<span>拍摄退货交接</span></button></div></section></div></div><div class="workspace-foot"><span class="footer-hint">过账后生成不可编辑库存流水，错误需冲销。</span>${state.outboundCompleted ? `<span class="status active">库存流水 MD-20260814-0017</span>` : `<button class="button primary" type="button" data-action="submit-outbound">${icon("package-minus")}<span>确认出库</span></button>`}</div></section>`;
+    }
+
+    function renderDirectOutbound() {
+      return `${pageHead("直接出库", "用于已授权的临时调拨、现场领用等场景；完成后生成出库单和库存流水。", "back-outbound")}<section class="workspace"><div class="workspace-head"><div><h2>新建直接出库</h2><span class="footer-hint">当前库房：主校区总库</span></div><span class="status pending">待出库</span></div><div class="workspace-body"><div class="quantity-grid"><section class="quantity-card"><h3>出库商品</h3><div class="field"><label>商品</label><select class="select"><option>一级大豆油 · 20L/桶</option><option>红富士苹果 · 80-85mm</option></select></div><div class="field"><label>出库数量</label><input class="input" value="2"></div><div class="field"><label>出库事由</label><select class="select"><option>库房临时调拨</option><option>现场领用</option><option>其他</option></select></div><div class="field"><label>领用 / 交接人</label><input class="input" value="李梅 · A 食堂 103 窗口"></div></section><section class="quantity-card"><h3>计数商品</h3><div class="notice info" style="margin-top:10px;">${icon("package-check")}<div>当前演示商品按“桶”出库，不展示重量。选择称重商品后，系统将按学校配置显示电子秤并要求记录重量。</div></div><div class="field"><label>现场照片</label><button class="button secondary" type="button">${icon("camera")}<span>拍摄交接</span></button></div></section></div></div><div class="workspace-foot"><span class="footer-hint">确认后生成 OUT-20260821-013 与库存流水。</span><button class="button primary" type="button" data-action="submit-direct-outbound">${icon("package-minus")}<span>确认直接出库</span></button></div></section>`;
+    }
+
+    function renderModal({ title, body, confirmLabel = "确认", confirmAction = "close-modal", danger = false }) {
+      document.getElementById("modal-root").innerHTML = `<div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true"><div class="modal-head"><h2>${title}</h2><button class="icon-button" type="button" data-action="close-modal" title="关闭">${icon("x")}</button></div><div class="modal-body">${body}</div><div class="modal-foot"><button class="button secondary" type="button" data-action="close-modal">取消</button><button class="button ${danger ? "danger" : "primary"}" type="button" data-action="${confirmAction}">${confirmLabel}</button></div></section></div>`;
+      refreshIcons();
+    }
+
+    function closeModal() { document.getElementById("modal-root").innerHTML = ""; }
+
+    function render() {
+      const app = document.getElementById("app");
+      if (state.surface === "login") { app.innerHTML = renderLogin(); refreshIcons(); return; }
+      const workflowContent = window.WorkflowUI?.render(state.view);
+      if (workflowContent !== null && workflowContent !== undefined) {
+        app.innerHTML = `<div class="pad-shell">${topbar()}<main class="pad-main">${workflowContent}</main></div>`;
+        refreshIcons();
+        return;
+      }
+      let content = "";
+      if (state.view === "home") content = renderHome();
+      if (state.view === "receipts") content = renderReceiptList();
+      if (state.view === "receipt-detail") content = renderReceiptDetail();
+      if (state.view === "issues") content = renderIssueList();
+      if (state.view === "issue-detail") content = renderIssueDetail();
+      if (state.view === "outbound") content = renderOutboundList();
+      if (state.view === "outbound-detail") content = renderOutboundDetail();
+      if (state.view === "direct-outbound") content = renderDirectOutbound();
+      app.innerHTML = `<div class="pad-shell">${topbar()}<main class="pad-main">${content}</main></div>`;
+      refreshIcons();
+    }
+
+    document.addEventListener("click", event => {
+      const target = event.target.closest("[data-action]");
+      if (!target) return;
+      const action = target.dataset.action;
+      if (action === "login") { state.surface = "pad"; state.view = "home"; render(); }
+      if (action === "logout") { state.surface = "login"; render(); }
+      if (action === "home") { state.view = "home"; render(); }
+      if (action === "open-receipts" || action === "back-receipts") { state.view = "receipts"; render(); }
+      if (action === "open-issues" || action === "back-issues") { state.view = "issues"; render(); }
+      if (action === "open-outbound" || action === "back-outbound") { state.view = "outbound"; render(); }
+      if (action === "start-receipt") {
+        state.selectedReceiptTab = target.dataset.child || "all";
+        const first = receiptVisibleItems()[0];
+        state.selectedReceiptItem = first?.id || "cabbage";
+        state.scaleValue = first?.scale || 0;
+        state.view = "receipt-detail";
+        render();
+      }
+      if (action === "refresh-scale") { state.scaleValue = Number((state.scaleValue + .035).toFixed(3)); render(); }
+      if (action === "record-weight") {
+        const item = receiptItems[state.selectedReceiptItem];
+        if (state.receiptInspectionMode === "full" && item.measureMode === "weight") state.receiptQuantities[item.id] = state.scaleValue;
+        renderModal({ title: state.receiptInspectionMode === "full" ? "称重结果已记录" : "抽检记录已保存", body: `<div class="notice success">${icon("scale")}<div><strong>${state.scaleValue.toFixed(3)} kg</strong><br>${state.receiptInspectionMode === "full" ? "已写入当前商品入库重量。" : "仅作为系统抽检证据，不改变入库重量。"}</div></div>`, confirmLabel: "知道了" });
+        render();
+      }
+      if (action === "add-photo" || action === "add-report") {
+        state.itemPhotos[state.selectedReceiptItem].push({ type: action === "add-report" ? "report" : "photo" });
+        render();
+      }
+      if (action === "order-attachments") {
+        renderModal({ title: "订单附件与备注", body: `<div class="field" style="margin-top:0;"><label>订单备注</label><textarea class="textarea" id="order-note" placeholder="填写整次送货或验收说明">${state.orderNote}</textarea></div><div class="field"><label>订单级照片</label><div class="form-actions"><button class="button secondary" type="button" data-action="add-order-photo">${icon("camera")}<span>拍摄现场</span></button><button class="button secondary" type="button" data-action="add-order-report">${icon("file-scan")}<span>标注为检验报告</span></button></div></div><p class="footer-hint">已添加 ${state.orderPhotos.length} 张。商品专属照片请在商品行中添加。</p>`, confirmLabel: "保存", confirmAction: "save-order-evidence" });
+      }
+      if (action === "add-order-photo" || action === "add-order-report") {
+        state.orderPhotos.push({ type: action === "add-order-report" ? "report" : "photo" });
+        document.querySelector(".modal-body .footer-hint").textContent = `已添加 ${state.orderPhotos.length} 张。商品专属照片请在商品行中添加。`;
+      }
+      if (action === "save-order-evidence") { state.orderNote = document.getElementById("order-note")?.value || ""; closeModal(); render(); }
+      if (action === "submit-receipt") {
+        const openChildren = receiptChildren.filter(entry => !state.receiptCompleted[entry.id] && (state.selectedReceiptTab === "all" || state.selectedReceiptTab === entry.id));
+        renderModal({ title: "提交验收入库", body: `<div class="notice warning">${icon("lock-keyhole")}<div>确认后将按 ${openChildren.length} 个供应商子订单分别生成入库凭证。已过账数据不能直接修改，只能冲销。</div></div><div class="sign-grid"><div class="sign-card"><strong>学校管理员</strong><span>王璐 · 已扫码确认</span></div><div class="sign-card"><strong>食堂管理员</strong><span>郭伟 · 已手写签字</span></div><div class="sign-card"><strong>档口代表</strong><span>陈洁 · 已扫码确认</span></div><div class="sign-card"><strong>供应商</strong><span>赵海 · 已手写签字</span></div></div><div class="field"><label>入库库存状态</label><select class="select"><option>可用库存</option><option>质检库存</option><option>冻结库存</option></select></div>`, confirmLabel: "确认入库", confirmAction: "confirm-receipt" });
+      }
+      if (action === "confirm-receipt") {
+        receiptChildren.filter(entry => state.selectedReceiptTab === "all" || entry.id === state.selectedReceiptTab).forEach(entry => state.receiptCompleted[entry.id] = true);
+        closeModal(); state.receiptListTab = "completed"; state.view = "receipts"; render();
+        renderModal({ title: "入库完成", body: `<div class="notice success">${icon("badge-check")}<div><strong>库存和供应商结算数据已更新。</strong><br>已生成入库凭证 RCV-20260814-0018、物料凭证 MD-20260814-0018。</div></div>`, confirmLabel: "完成" });
+      }
+      if (action === "show-locked") renderModal({ title: "已完成，禁止重复入库", body: `<div class="notice info">${icon("lock")}<div>该子订单已经生成物料凭证。需要更正时请在后台发起冲销，不可再次入库。</div></div><p>物料凭证：MD-20260814-0012</p>`, confirmLabel: "知道了" });
+      if (action === "start-issue") {
+        state.selectedIssue = target.dataset.issue;
+        const order = issueOrders.find(item => item.id === state.selectedIssue) || issueOrders[0];
+        state.selectedIssueItem = order.items[0];
+        state.view = "issue-detail"; render();
+      }
+      if (action === "submit-issue") renderModal({ title: "确认领料出库", body: `<div class="notice warning">${icon("package-minus")}<div>出库后扣减实际库存并释放整张领料单的占用数量，成本归属原采购需求档口。</div></div>`, confirmLabel: "确认出库", confirmAction: "confirm-issue" });
+      if (action === "confirm-issue") { state.issueCompleted[state.selectedIssue] = true; closeModal(); render(); }
+      if (action === "start-outbound") { state.view = "outbound-detail"; render(); }
+      if (action === "open-direct-outbound") { state.view = "direct-outbound"; render(); }
+      if (action === "submit-direct-outbound") renderModal({ title: "确认直接出库", body: `<div class="notice warning">${icon("package-minus")}<div>确认后生成出库单 OUT-20260821-013 与不可编辑库存流水，库存按 2 桶扣减。</div></div>`, confirmLabel: "确认出库", confirmAction: "confirm-direct-outbound" });
+      if (action === "confirm-direct-outbound") { state.directOutboundCompleted = true; closeModal(); state.view = "outbound"; render(); }
+      if (action === "refresh-issue-scale") { state.issueScaleValue = Number((state.issueScaleValue + .025).toFixed(3)); render(); }
+      if (action === "record-issue-weight") { const item = issueItems[state.selectedIssueItem]; state.issueQuantities[item.id] = state.issueScaleValue; renderModal({ title: "出库重量已写入", body: `<div class="notice success">${icon("scale")}<div><strong>${state.issueScaleValue.toFixed(3)} kg</strong><br>已写入 ${item.name} 的实际出库重量。</div></div>`, confirmLabel: "知道了" }); render(); }
+      if (action === "refresh-outbound-scale") { state.outboundScaleValue = Number((state.outboundScaleValue + .025).toFixed(3)); render(); }
+      if (action === "record-outbound-weight") renderModal({ title: "出库重量已写入", body: `<div class="notice success">${icon("scale")}<div><strong>${state.outboundScaleValue.toFixed(3)} kg</strong><br>已写入当前出库单实际重量。</div></div>`, confirmLabel: "知道了" });
+      if (action === "submit-outbound") renderModal({ title: "确认其他出库", body: `<div class="notice warning">${icon("triangle-alert")}<div>将按审批单据扣减 5 千克库存并生成物料凭证，原出库单随后锁定。</div></div>`, confirmLabel: "确认出库", confirmAction: "confirm-outbound" });
+      if (action === "confirm-outbound") { state.outboundCompleted = true; closeModal(); render(); }
+      if (action === "close-modal") closeModal();
+    });
+
+    document.addEventListener("click", event => {
+      const receiptTab = event.target.closest("[data-receipt-tab]");
+      if (receiptTab) { state.selectedReceiptTab = receiptTab.dataset.receiptTab; const first = receiptVisibleItems()[0]; if (first) { state.selectedReceiptItem = first.id; state.scaleValue = first.scale; } render(); }
+      const receiptItem = event.target.closest("[data-receipt-item]");
+      if (receiptItem) { state.selectedReceiptItem = receiptItem.dataset.receiptItem; state.scaleValue = receiptItems[state.selectedReceiptItem].scale; render(); }
+      const issueItem = event.target.closest("[data-issue-item]");
+      if (issueItem) { state.selectedIssueItem = issueItem.dataset.issueItem; render(); }
+      const listTab = event.target.closest("[data-receipt-list-tab]");
+      if (listTab) { state.receiptListTab = listTab.dataset.receiptListTab; render(); }
+      const outboundSourceTab = event.target.closest("[data-outbound-source-tab]");
+      if (outboundSourceTab) { state.outboundSourceTab = outboundSourceTab.dataset.outboundSourceTab; render(); }
+    });
+
+    document.addEventListener("input", event => {
+      if (event.target.matches("[data-receipt-quantity]")) state.receiptQuantities[event.target.dataset.receiptQuantity] = Number(event.target.value || 0);
+      if (event.target.matches("[data-issue-quantity]")) state.issueQuantities[event.target.dataset.issueQuantity] = Number(event.target.value || 0);
+    });
+
+    setInterval(() => {
+      state.now = new Date(state.now.getTime() + 60000);
+      const clock = document.getElementById("current-time");
+      if (clock) clock.textContent = formatTime(state.now);
+    }, 60000);
+
+    WorkflowUI.install({ state, render, pad: true });
+    render();
+  </script>
+</body>
+</html>
