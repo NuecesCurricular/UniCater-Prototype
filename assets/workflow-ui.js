@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  const W=window.UCWorkflow, KEY='unicater-workflow-20260909';
+  const W=window.UCWorkflow, KEY='unicater-workflow-demo-20260923-v2';
   const ui={category:'全部',warehouse:'主校区总库',selected:'',tab:'',detail:false,dimension:'document',lastView:'',quantities:{},photos:[],weights:{},receiptItem:0};
   let host;
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -14,7 +14,7 @@
   const check=(name,label,on=false)=>`<label><input type="checkbox" name="${name}" ${on?'checked':''}> ${label}</label>`;
   const select=(name,values,value)=>`<select name="${name}">${values.map(v=>{const [k,t]=Array.isArray(v)?v:[v,v];return `<option value="${esc(k)}" ${k===value?'selected':''}>${esc(t)}</option>`;}).join('')}</select>`;
   const notice=t=>`<div class="wf-notice">${t}</div>`;
-  function read(){const raw=localStorage.getItem(KEY);if(!raw){const db=W.seed();localStorage.setItem(KEY,JSON.stringify(db));return db;}return JSON.parse(raw);}
+  function read(){const raw=localStorage.getItem(KEY);if(!raw){const db=W.seedDemo();localStorage.setItem(KEY,JSON.stringify(db));return db;}return JSON.parse(raw);}
   function actor(){return {name:host.pad?'赵平':host.state.contact,role:host.pad?'school':host.state.participant};}
   function isSchool(){return actor().role==='school';}
   function isSupplier(){return actor().role==='supplier';}

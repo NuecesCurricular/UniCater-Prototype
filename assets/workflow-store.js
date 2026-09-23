@@ -19,6 +19,77 @@
     const offers = suppliers.flatMap((s, si) => products.map((p, i) => ({id:`${s.id}-${p.id}`,supplier:s.id,product:p.id,sku:`${s.id.toUpperCase()}-${i + 101}`,name:si && p.id==='potato'?'马铃薯中号':p.name,spec:p.spec,unit:p.unit,factor:1,price:qty(p.historyPrice*(si?1.05:1)),supply:true,matched:true,approved:true,own:false})));
     return {schema:1,seq:30,revision:0,products,suppliers,offers,plans:[],rfqs:[{id:'RFQ-001',name:'本期常用食材报价',products:products.map(p=>p.id),start:now-86400000*2,end:now-3600000,validFrom:now-1800000,validTo:now+86400000*14,status:'已接受报价',responses:suppliers.map(s=>({supplier:s.id,lines:clone(offers.filter(o=>o.supplier===s.id)),at:now-7200000})),accepted:offers.map(o=>o.id),gaps:[]}],demands:[],orders:[],issues:[],movements:[],manual:[],exceptions:[],bills:[],notes:[],settings:{period:'半月',inspection:'sampling',sampleRate:34,requireWeight:true,requirePhoto:false,pickupHours:4},priceSheets:[{id:'PS-001',name:'学校基础价格',updated:now,lines:clone(offers.filter(o=>o.supplier==='s1'))}],audit:[]};
   }
+  function seedDemo() {
+    const db=seed(), now=Date.now(), day=86400000, hour=3600000;
+    const offer=(supplier,product)=>db.offers.find(o=>o.supplier===supplier&&o.product===product);
+    const line=(product,demand,stall,need,extra,supplier)=>{const o=offer(supplier,product);return {product,demand,stall,need,extra,quantity:qty(need+extra),supplier,price:qty(o.price/o.factor),offer:o.id,sku:o.sku,unit:db.products.find(p=>p.id===product).unit,spec:o.spec};};
+    const movement=(id,at,type,source,product,quantity,direction,value,extra={})=>({id,at,type,source,product,quantity,direction,value,sealed:false,payable:0,cost:0,supplier:'',stall:'',...extra});
+
+    db.schema=2;
+    db.seq=180;
+    db.plans=[
+      {id:'PLAN-202609-01',name:'9月下半月常用食材采购清单',status:'已固定',products:db.products.map(p=>p.id),forecasts:[{product:'potato',quantity:620},{product:'cabbage',quantity:480},{product:'tomato',quantity:360},{product:'pork',quantity:220},{product:'apple',quantity:180},{product:'oil',quantity:42}],reported:['s1','s2'],created:now-day*8},
+      {id:'PLAN-202610-01',name:'国庆后首周采购清单',status:'学校初筛',products:['potato','cabbage','tomato','pork','oil'],forecasts:[],reported:['s1','s2'],created:now-day}
+    ];
+    db.rfqs.push({id:'RFQ-202609-02',name:'9月下半月补充报价邀约',plan:'PLAN-202609-01',products:['pork','oil'],start:now-hour*3,end:now+day,validFrom:now+day,validTo:now+day*15,status:'待报价',responses:[{supplier:'s1',lines:clone(db.offers.filter(o=>o.supplier==='s1'&&['pork','oil'].includes(o.product))),at:now-hour}],accepted:[],gaps:[]});
+    db.priceSheets.push({id:'PS-002',name:'食堂大宗采购价',validFrom:now-day,validTo:now+day*30,updated:now-hour*5,lines:clone(db.offers.filter(o=>o.supplier==='s1').map(o=>({...o,price:qty(o.price*0.98)})))});
+    db.requests=[
+      {id:'CAT-001',name:'西芹',spec:'鲜品、单棵不低于500g',category:'蔬菜',unit:'kg',status:'待确认',initiator:'陈洁'},
+      {id:'CAT-002',name:'低筋面粉',spec:'25kg/袋、餐饮用',category:'粮油',unit:'袋',status:'已纳入',initiator:'周蕾',product:'oil'}
+    ];
+    db.demands=[
+      {id:'DEM-20260923-001',stall:'A食堂 / 101号窗口',initiator:'陈洁',due:'2026-09-24 06:30',status:'待餐饮公司审核',lines:[{product:'potato',quantity:22,supplier:'s1'},{product:'pork',quantity:8,supplier:'s1'}],created:now-hour*2},
+      {id:'DEM-20260923-002',stall:'A食堂 / 102号窗口',initiator:'王璐',due:'2026-09-24 07:00',status:'待学校审核',lines:[{product:'cabbage',quantity:18,supplier:'s1'},{product:'tomato',quantity:16,supplier:'s2'}],created:now-hour*4,rejectedByCompany:[]},
+      {id:'DEM-20260922-018',stall:'B食堂 / 203号窗口',initiator:'李明',due:'2026-09-24 07:30',status:'已审核',lines:[{product:'potato',quantity:35,supplier:'s1'},{product:'apple',quantity:20,supplier:'s1'}],created:now-day,unresolved:[],rejected:[]},
+      {id:'DEM-20260921-012',stall:'教工食堂 / 自选窗口',initiator:'周蕾',due:'2026-09-22 07:00',status:'已审核',lines:[{product:'cabbage',quantity:10,supplier:'s1'},{product:'oil',quantity:2,supplier:'s1'}],created:now-day*2,unresolved:[],rejected:[]}
+    ];
+    const draft=[line('tomato','DEM-20260923-002','A食堂 / 102号窗口',16,4,'s2')];
+    const reviewing=[line('pork','DEM-20260923-001','A食堂 / 101号窗口',8,2,'s1')];
+    const sentS1=[line('potato','DEM-20260922-018','B食堂 / 203号窗口',20,10,'s1'),line('apple','DEM-20260922-018','B食堂 / 203号窗口',20,0,'s1')];
+    const sentS2=[line('tomato','DEM-20260923-002','A食堂 / 102号窗口',16,0,'s2')];
+    const done=[line('cabbage','DEM-20260921-012','教工食堂 / 自选窗口',10,5,'s1'),line('oil','DEM-20260921-012','教工食堂 / 自选窗口',2,2,'s1')];
+    db.orders=[
+      {id:'PO-20260923-003',source:'DEM-20260923-002',initiator:'王璐',status:'未提交',reason:'',lines:draft,children:[],approvals:[]},
+      {id:'PO-20260923-002',source:'DEM-20260923-001',initiator:'王璐',status:'待审核',reason:'',submitted:now-hour,lines:reviewing,children:[],approvals:[{name:'王璐',result:'已提交',at:now-hour},{name:'刘志刚',result:'待审批'}]},
+      {id:'PO-20260922-018',source:'汇总审核',initiator:'王璐',status:'已发送',reason:'',submitted:now-day,lines:[...sentS1,...sentS2],approvals:[{name:'王璐',result:'已提交',at:now-day},{name:'刘志刚',result:'已通过',at:now-day+hour}],children:[{id:'PO-20260922-018-1',supplier:'s1',status:'已确认',lines:clone(sentS1),samples:[0],inspection:'sampling'},{id:'PO-20260922-018-2',supplier:'s2',status:'待确认',lines:clone(sentS2)}]},
+      {id:'PO-20260921-012',source:'DEM-20260921-012',initiator:'王璐',status:'已发送',reason:'',submitted:now-day*2,lines:done,approvals:[{name:'王璐',result:'已提交',at:now-day*2},{name:'刘志刚',result:'已通过',at:now-day*2+hour}],children:[{id:'PO-20260921-012-1',supplier:'s1',status:'已完成',lines:clone(done),actual:[14.5,4],difference:true,evidence:{photos:2},signatures:{school:'赵平',supplier:true,stall:false}}]}
+    ];
+    db.issues=[
+      {id:'IS-20260923-008',demand:'DEM-20260922-018',source:'DEM-20260922-018',stall:'B食堂 / 203号窗口',lines:[{product:'potato',quantity:15}],status:'待领取',due:now+hour*2},
+      {id:'IS-20260923-006',demand:'DEM-20260921-012',source:'MOV-20260921-101',stall:'教工食堂 / 自选窗口',lines:[{product:'cabbage',quantity:10},{product:'oil',quantity:2}],actual:[{product:'cabbage',quantity:10},{product:'oil',quantity:2}],status:'已完成',due:now-day,completed:now-day+hour,recipient:'张敏'}
+    ];
+    db.movements=[
+      movement('MOV-20260921-101',now-day*2+hour*4,'采购入库','PO-20260921-012-1','cabbage',14.5,'in',3190,{supplier:'s1',payable:3190,price:2.2,reason:'实收较订单少0.5kg'}),
+      movement('MOV-20260921-102',now-day*2+hour*4,'采购入库','PO-20260921-012-1','oil',4,'in',67200,{supplier:'s1',payable:67200,price:168}),
+      movement('MOV-20260922-103',now-day+hour,'领料出库','IS-20260923-006','cabbage',10,'out',2200,{stall:'教工食堂 / 自选窗口',cost:2200,recipient:'张敏'}),
+      movement('MOV-20260922-104',now-day+hour,'领料出库','IS-20260923-006','oil',2,'out',33600,{stall:'教工食堂 / 自选窗口',cost:33600,recipient:'张敏'}),
+      movement('MOV-20260922-105',now-hour*7,'期初入库','DOC-20260922-001','potato',30,'in',9000,{reason:'新库房期初盘点'})
+    ];
+    db.movements[0].sealed=true;
+    db.movements[1].sealed=true;
+    db.manual=[
+      {id:'DOC-20260923-011',type:'直接出库',product:'cabbage',quantity:2,price:0,reason:'食品安全留样',recipient:'校食品安全办公室',zeroReason:'',status:'待执行'},
+      {id:'DOC-20260922-001',type:'期初入库',product:'potato',quantity:30,price:3,reason:'新库房期初盘点',recipient:'主校区总库',zeroReason:'',status:'已完成'}
+    ];
+    db.exceptions=[
+      {id:'NEW-20260923-004',source:'MOV-20260921-101',type:'录入更正',quantity:0.5,amount:0,reason:'入库重量误录0.5kg，待双方核对',status:'待核对',afterSettlement:true,created:now-hour*3},
+      {id:'NEW-20260922-002',source:'MOV-20260922-104',type:'档口退回',quantity:1,amount:0,reason:'未开封整桶退回学校库房',status:'已完成',afterSettlement:false,created:now-day,movement:'MOV-20260922-106'}
+    ];
+    db.bills=[
+      {id:'BILL-202609-001',kind:'supplier',party:'s1',start:now-day*15,end:now-day,sealedAt:now-hour*6,lines:clone(db.movements.slice(0,2)),status:'已结算',school:true,other:true,dispute:'',amount:70390},
+      {id:'BILL-202609-002',kind:'stall',party:'教工食堂 / 自选窗口',start:now-day*15,end:now+day,lines:clone(db.movements.slice(2,4)),status:'对账中',school:true,other:false,dispute:'',amount:35800}
+    ];
+    db.notes=[
+      {id:'MSG-001',text:'PO-20260922-018-2 等待绿源生鲜商贸确认订单'},
+      {id:'MSG-002',text:'BILL-202609-002 等待教工食堂确认本期领料成本'}
+    ];
+    db.audit=[
+      {at:now-day*2,action:'receipt',actor:'赵平',role:'school'},
+      {at:now-day,action:'issue-complete',actor:'赵平',role:'school'},
+      {at:now-hour*3,action:'exception-create',actor:'王璐',role:'school'}
+    ];
+    return db;
+  }
   function id(db, prefix) { db.seq++; return `${prefix}-${String(db.seq).padStart(5,'0')}`; }
   function product(db, pid) { const p=db.products.find(x=>x.id===pid); requireThat(p,'商品不存在'); return p; }
   function reserved(db, pid) { return qty(db.issues.filter(x=>x.status==='待领取').flatMap(x=>x.lines).filter(x=>x.product===pid).reduce((s,x)=>s+x.quantity,0)); }
@@ -157,6 +228,6 @@
     for(const m of db.movements.slice(input.movements.length))refreshOpenBills(db,m);
     db.revision++;db.audit.push({at:now,action,actor:actor.name,role:actor.role});return db;
   }
-  const api={seed,execute,prices,referencePrice,available,reserved,progress,money,qty,clone,billLines,period,sampleTasks};
+  const api={seed,seedDemo,execute,prices,referencePrice,available,reserved,progress,money,qty,clone,billLines,period,sampleTasks};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.UCWorkflow=api;
 })(typeof window!=='undefined'?window:globalThis);
